@@ -628,8 +628,11 @@ function _kuzumap._merchantmod_ed()
 	_e_b:SetScript("OnShow",function(self)
 
 		self:SetText("1")
-		itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
-	
+		if StaticPopup1ItemFrameCount:IsVisible() then
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		else
+			itemcount = 1
+		end
 	end)
 	
 	_e_b:SetScript("OnChar",function(self,userInput,...)
@@ -692,7 +695,12 @@ StaticPopup1:HookScript("OnShow", function(self)
 	
 	if sttext:match("Hitem:124124") then
 	
-		local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		local itemcount
+		if StaticPopup1ItemFrameCount:IsVisible() then
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		else
+			itemcount = 1
+		end
 	
 		kuzumap_Popup:Show()
 		kuzumap_Popup.text_right:SetText(' * '..itemcount..' = '..itemcount)
@@ -714,7 +722,12 @@ StaticPopup1Button1:HookScript("OnClick", function(self)
 	
 	if sttext:match("Hitem:124124") then
 	
-		local itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		local itemcount
+		if StaticPopup1ItemFrameCount:IsVisible() then
+			itemcount = tonumber(StaticPopup1ItemFrameCount:GetText()) or 1
+		else
+			itemcount = 1
+		end
 		local setitemcount = kuzumap_Popup:GetNumber()
 		local itemname = StaticPopup1ItemFrameText:GetText()
 
