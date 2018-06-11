@@ -16,7 +16,9 @@ local tipscan = CreateFrame("GameTooltip", "TooltipScanArt",nil,"GameTooltipTemp
 local b_c = false
 local b_c_2 = false
 local elvui_changed = false
+local bagnon_changed = false
 local have_elv = IsAddOnLoaded('ElvUI')
+local have_bagnon = IsAddOnLoaded('Bagnon')
 local disable_useap = false
 
 function _kuzumap._ap_to_nlvl()
@@ -506,6 +508,52 @@ function _kuzumap.ElvUI_bank_buttons_create()
 	
 end
 
+function _kuzumap.Bagnon_bank_buttons_create()
+	
+	local b_size_x = 50
+	local b_size_y = 25
+	local y_off = 12
+	
+	if bagnon_changed then return end 
+	
+	local _b_1 = CreateFrame('Button', 'elvui_kuzumap_getAP', _G.BagnonFramebank.titleFrame)
+	_b_1:SetSize(b_size_x,b_size_y)
+	_b_1:SetPoint('TOPRIGHT',-10,-35)
+	_b_1:SetNormalFontObject("GameFontNormalSmall")
+	_b_1:SetText('[подсчет СА]')
+	_b_1:Show()
+	_b_1:SetScript('OnClick', function()
+
+		_kuzumap._calculate_result()
+	
+	end)
+	
+	local _b_2 = CreateFrame('Button', 'elvui_kuzumap_dropAP', _b_1)
+	_b_2:SetSize(b_size_x,b_size_y)
+	_b_2:SetPoint('RIGHT',0,b_size_y-y_off)
+	_b_2:SetNormalFontObject("GameFontNormalSmall")
+	_b_2:SetText('[положить СА]')
+	_b_2:SetScript('OnClick', function()
+
+		_kuzumap._deposite_sa()
+	
+	end)
+	
+	local _b_3 = CreateFrame('Button', 'elvui_kuzumap_backAP', _b_2)
+	_b_3:SetSize(b_size_x,b_size_y)
+	_b_3:SetPoint('RIGHT',0,b_size_y-y_off)
+	_b_3:SetNormalFontObject("GameFontNormalSmall")
+	_b_3:SetText('[забрать СА]') 
+	_b_3:SetScript('OnClick', function()
+
+		_kuzumap._grab_sa()
+	
+	end)
+	
+	bagnon_changed = true
+	
+end
+
 function _kuzumap.useap_button_upd()
 	
 	_link, _itemicon, _bag, _slot, _count = _kuzumap._ap_item_player_bag()
@@ -965,10 +1013,14 @@ _load:SetScript("OnEvent", function(self, event, ...)
 			
 			-- ElvUI
 
-			if have_elv then
+			if have_elv and not have_bagnon then
 				
 				C_Timer.After(0.1, function() _kuzumap.ElvUI_bank_buttons_create() end)
-					
+			
+			elseif have_bagnon then
+			
+				C_Timer.After(0.1, function() _kuzumap.Bagnon_bank_buttons_create() end)
+			
 			end
 			
 			_kuzumap.useap_button_upd()
