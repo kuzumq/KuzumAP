@@ -21,20 +21,121 @@ local disable_useap = false
 
 function _kuzumap._ap_to_nlvl()
 
-	local _, _, _, _, totalPower, traitsLearned = C_ArtifactUI.GetEquippedArtifactInfo()
+	local _, _, _, _, totalPower, traitsLearned, _, _, _, _, _, _, tier = C_ArtifactUI.GetEquippedArtifactInfo()
 	
-	local _, power, powerForNextTrait = MainMenuBar_GetNumArtifactTraitsPurchasableFromXP(traitsLearned, totalPower)
-	
+	local _, power, powerForNextTrait = MainMenuBar_GetNumArtifactTraitsPurchasableFromXP(traitsLearned, totalPower, tier)
+
 	return powerForNextTrait-power, power
 	
 end
 
 function _kuzumap._ap_lvl(lvl)
 
-	local temp = {100,300,325,350,375,400,425,450,525,625,750,875,1000,
-	6840,8830,11280,14400,18620,24000,30600,39520,50880,64800,82500,105280,138650,182780,240870,315520,
-	417560,546000,718200,946660,1245840,1635200,1915000,2010000,2110000,2215000,2325000,2440000,2560000,
-	2690000,2825000,2965000,3115000,3270000,3435000,3605000,3785000,3975000,4175000,4385000,4605000}
+	--local _, _, _, _, _, traitsLearned, _, _, _, _, _, _, tier = C_ArtifactUI.GetEquippedArtifactInfo()
+	--return C_ArtifactUI.GetCostForPointAtRank(traitsLearned, tier)
+	
+	local temp = {
+	100, --1
+	300, --
+	325, --
+	350, --
+	375, --
+	400, --
+	425, --
+	450, --
+	525, --
+	625, --10
+	750, --
+	875, --
+	1000, --
+	6840, --
+	8830, --15
+	11280, --
+	14400, --
+	18620, --
+	24000, --
+	30600, --20
+	39520, --
+	50880, --
+	64800, --
+	82500, --
+	105280, --25
+	138650, --
+	182780, --
+	240870, --
+	315520, --
+	417560, --30
+	546000, --
+	718200, --
+	946660, --
+	1245840, --
+	1635200, --35
+	1915000, --
+	10000000, --
+	13000000, --
+	17000000, --
+	22000000, --40
+	29000000, --
+	38000000, --
+	49000000, --
+	64000000, --
+	83000000, --45
+	108000000, --
+	140000000, --
+	182000000, --
+	237000000, --
+	308000000, --50
+	400000000, --
+	520000000, --
+	676000000, --
+	880000000, --
+	1144000000, --55
+	1488000000,
+	1976000000,
+	2516000000,
+	3272000000,
+	4252000000,
+	5528000000,
+	7188000000,
+	9344000000,
+	12148000000,
+	15792000000,
+	20528000000,
+	26688000000,
+	34696000000,
+	45104000000,
+	58636000000,
+	76228000000,
+	99096000000,
+	128824000000,
+	167472000000,
+	217712000000,
+	283024000000,
+	367932000000,
+	478312000000,
+	808000000000,
+	1050000000000,
+	1370000000000,
+	1780000000000,
+	2310000000000,
+	3000000000000,
+	3900000000000,
+	5070000000000,
+	6590000000000,
+	8570000000000,
+	11100000000000,
+	14500000000000,
+	18000000000000,
+	24500000000000,
+	31800000000000,
+	41400000000000,
+	53800000000000,
+	69900000000000,
+	90900000000000,
+	118000000000000,
+	154000000000000,
+	200000000000000
+	}
 	
 	return temp[lvl]
 
@@ -44,13 +145,13 @@ function _kuzumap._tolvl(learn,have_ap,lvl)
 
 	local get_lvl = 0
 	local nextlvl = lvl + 1
-	local tolvl = _kuzumap._ap_lvl(nextlvl) - learn
+	local tolvl = _kuzumap._ap_lvl(lvl) - learn
 	
 	while have_ap > 0 do
 
-	tolvl = _kuzumap._ap_lvl(nextlvl) - learn
+	tolvl = _kuzumap._ap_lvl(lvl) - learn
     
-		if (learn+have_ap) >= _kuzumap._ap_lvl(nextlvl) then
+		if (learn+have_ap) >= _kuzumap._ap_lvl(lvl) then
       
 		get_lvl = get_lvl + 1 
 		lvl = lvl + 1
@@ -61,7 +162,7 @@ function _kuzumap._tolvl(learn,have_ap,lvl)
 		else
       
 		learn = learn+have_ap
-		tolvl = _kuzumap._ap_lvl(nextlvl) - learn
+		tolvl = _kuzumap._ap_lvl(lvl) - learn
 		have_ap = 0
       
 		end
@@ -89,6 +190,7 @@ function _kuzumap._getap_f_i(bag, slot)
     tipscan:Show()
 	
 	local txt = _G['TooltipScanArtTextLeft4']:GetText()
+	txt = txt:gsub("%s+", "")
 	
 	local x = tonumber(string.match(txt, '%d+'))
 	
@@ -169,11 +271,12 @@ function _kuzumap._calculate_result()
 	for i=-1, 11 do 
 	
 		for j=1,GetContainerNumSlots(i) do 
-		
-			if _is_ap_item(GetContainerItemID(i,j)) then
+			
+			local iId = GetContainerItemID(i,j)
+			
+			if _is_ap_item(iId) then
 			
 				local count = _kuzumap._getap_f_i(i,j)
-				
 				have = have + count
 				
 			end
@@ -186,11 +289,11 @@ function _kuzumap._calculate_result()
 	
 	local tonextlvl,learning = _kuzumap._ap_to_nlvl()
 	
-	local totalpowerto_nextlvl = _kuzumap._ap_lvl(nextlvl)
+	local totalpowerto_nextlvl = _kuzumap._ap_lvl(lvl)
 	
-	local novip_lvlups,novip_tonextneed,novip_learning = _kuzumap._tolvl(learning,have,lvl)
+	local novip_lvlups,novip_tonextneed,novip_learning = _kuzumap._tolvl(learning,have,lvl+1)
 	
-	local vip_lvlups,vip_tonextneed,vip_learning = _kuzumap._tolvl(learning,have*1.49,lvl)
+	local vip_lvlups,vip_tonextneed,vip_learning = _kuzumap._tolvl(learning,have*1.49,lvl+1)
 	
 	local novip_newlvl = lvl + novip_lvlups
 	
@@ -495,7 +598,6 @@ function _kuzumap._useap_button_create()
 		end
 	end)
 	_ub:SetScript("OnDragStop", function(self)
-		print(self:GetPoint())
 		self:StopMovingOrSizing()
 		_setdb.position.point, _, _setdb.position.relativePoint, _setdb.position.x, _setdb.position.y = self:GetPoint()
 	end)
@@ -757,6 +859,40 @@ function _kuzumap._load()
 	
 end
 
+local function cutoffnums(num)
+	
+	if not num then return 0 end
+	
+    local leng = string.len(num)
+	local str = tostring(num)
+
+	local stm = ("%%.2f"):format()
+	
+	if leng >= 8 then
+		print(8)
+		str = stm:format(num/1000000)..'M'
+
+	end
+
+	if leng >= 10 then
+		print(10)
+		str = stm:format(num/1000000000)..'Б'
+
+	end
+	
+	return str
+	
+end
+
+local function HookSetText4Art()
+
+	local _, _, _, _, totalPower, traitsLearned, _, _, _, _, _, _, tier = C_ArtifactUI.GetEquippedArtifactInfo()
+	local _, power, powerForNextTrait = MainMenuBar_GetNumArtifactTraitsPurchasableFromXP(traitsLearned, totalPower, tier)
+
+	SetText(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel, cutoffnums(power) .. " \124c11FF8888 <<=" .. cutoffnums(powerForNextTrait-power) .."\124r")
+
+end
+
 -- load
 local _load = CreateFrame("Frame")
 _load:Hide()
@@ -772,8 +908,24 @@ _load:RegisterEvent("UNIT_EXITED_VEHICLE")
 _load:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
 _load:RegisterEvent("BANKFRAME_OPENED")
 _load:RegisterEvent("BANKFRAME_CLOSED")
+_load:RegisterEvent("ARTIFACT_XP_UPDATE")
 _load:SetScript("OnEvent", function(self, event, ...)
 
+	if event == "ADDON_LOADED" and (...) == "Blizzard_ArtifactUI" then
+	
+		SetText = ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel.SetText
+		ArtifactFrame.PerksTab.TitleContainer:SetScript("OnUpdate", nil)
+		HookSetText4Art()
+		hooksecurefunc(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel,"SetText", HookSetText4Art)
+		
+	end
+	
+	if event == "ARTIFACT_XP_UPDATE" and ArtifactFrame and ArtifactFrame:IsShown() then
+	
+		HookSetText4Art()
+	
+	end
+	
 	if event == "ADDON_LOADED" and (...) == addonName then
 		
 		_kuzumap._load()
