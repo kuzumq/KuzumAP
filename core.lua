@@ -145,13 +145,13 @@ function _kuzumap._tolvl(learn,have_ap,lvl)
 
 	local get_lvl = 0
 	local nextlvl = lvl + 1
-	local tolvl = _kuzumap._ap_lvl(lvl) - learn
+	local tolvl = _kuzumap._ap_lvl(nextlvl) - learn
 	
 	while have_ap > 0 do
 
-	tolvl = _kuzumap._ap_lvl(lvl) - learn
+	tolvl = _kuzumap._ap_lvl(nextlvl) - learn
     
-		if (learn+have_ap) >= _kuzumap._ap_lvl(lvl) then
+		if (learn+have_ap) >= _kuzumap._ap_lvl(nextlvl) then
       
 		get_lvl = get_lvl + 1 
 		lvl = lvl + 1
@@ -162,7 +162,7 @@ function _kuzumap._tolvl(learn,have_ap,lvl)
 		else
       
 		learn = learn+have_ap
-		tolvl = _kuzumap._ap_lvl(lvl) - learn
+		tolvl = _kuzumap._ap_lvl(nextlvl) - learn
 		have_ap = 0
       
 		end
@@ -289,11 +289,11 @@ function _kuzumap._calculate_result()
 	
 	local tonextlvl,learning = _kuzumap._ap_to_nlvl()
 	
-	local totalpowerto_nextlvl = _kuzumap._ap_lvl(lvl)
+	local totalpowerto_nextlvl = _kuzumap._ap_lvl(lvl+1)
 	
-	local novip_lvlups,novip_tonextneed,novip_learning = _kuzumap._tolvl(learning,have,lvl+1)
-	
-	local vip_lvlups,vip_tonextneed,vip_learning = _kuzumap._tolvl(learning,have*1.49,lvl+1)
+	local novip_lvlups,novip_tonextneed,novip_learning = _kuzumap._tolvl(learning,have,lvl)
+
+	local vip_lvlups,vip_tonextneed,vip_learning = _kuzumap._tolvl(learning,have*1.49,lvl)
 	
 	local novip_newlvl = lvl + novip_lvlups
 	
@@ -869,13 +869,13 @@ local function cutoffnums(num)
 	local stm = ("%%.2f"):format()
 	
 	if leng >= 8 then
-		print(8)
+	
 		str = stm:format(num/1000000)..'M'
 
 	end
 
 	if leng >= 10 then
-		print(10)
+	
 		str = stm:format(num/1000000000)..'Б'
 
 	end
@@ -889,7 +889,7 @@ local function HookSetText4Art()
 	local _, _, _, _, totalPower, traitsLearned, _, _, _, _, _, _, tier = C_ArtifactUI.GetEquippedArtifactInfo()
 	local _, power, powerForNextTrait = MainMenuBar_GetNumArtifactTraitsPurchasableFromXP(traitsLearned, totalPower, tier)
 
-	SetText(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel, cutoffnums(power) .. " \124c11FF8888 <<=" .. cutoffnums(powerForNextTrait-power) .."\124r")
+	SetText(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel, cutoffnums(power) .. " \124c11FF8888 / " .. cutoffnums(powerForNextTrait-power) .."\124r")
 
 end
 
