@@ -1,7 +1,7 @@
 ## Title: !KuzumAP - |r[|cffFFA500СА Инфо|r]
 ## Notes: СА хэлпер
 ## Interface: 70300
-## Version: 1.2
+## Version: 1.2.1
 ## Author: Kuzum
 ## SavedVariables: KuzumAP_UserDB
 ## SavedVariablesPerCharacter: KuzumAP_UserCharacterDB
