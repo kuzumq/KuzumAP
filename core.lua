@@ -657,7 +657,6 @@ function _kuzumap._useap_button_create()
 end
 
 -- chat filter
-	-- Идея взаимствована у Авгена
 
 function _kuzumap._mythKeyChat_Info(link)
 
@@ -731,11 +730,13 @@ local chatEvents = {
 }
 
 -- chat Filter
+--[[
 for _, v in pairs(chatEvents) do
 
 	ChatFrame_AddMessageEventFilter(v, _kuzumap._chatFilter)
 	
 end
+]]
 
 -- Merchant mod
 function _kuzumap._merchant_buy(name, num, itemcount)
@@ -783,8 +784,6 @@ function _kuzumap._merchantmod_ed()
 	end)
 	
 	_e_b:SetScript("OnChar",function(self,userInput,...)
-		
-		--if userInput == '0' then self:SetText('1') end
 		
 		local Text = self:GetText() or userInput
 		
@@ -834,6 +833,55 @@ function _kuzumap._merchantmod_ed()
 	
 end
 
+local function bankfix(self, button)
+
+	local sid = self:GetID()
+
+	if button == 'RightButton' then
+	
+		if IsControlKeyDown() and sid >0 and sid < 29 then
+		
+			PickupContainerItem(BANK_CONTAINER, self:GetID())
+			PutItemInBackpack()
+			
+		end
+		
+	end
+	
+end
+
+local function bankfixInv(self, button)
+	
+	local bagid = self:GetParent():GetID()
+	
+	if button == 'RightButton' then
+	
+		if IsControlKeyDown() and bagid >4 and bagid < 12 then
+		
+			PickupContainerItem(bagid, self:GetID())
+			PutItemInBackpack()
+			
+		end
+		
+	end
+	
+end
+
+function Bagnonfix(self, button)
+	
+	if button == 'RightButton' then
+	
+		if IsControlKeyDown() then
+			
+			PickupContainerItem(self:GetBag(), self:GetID())
+			PutItemInBackpack()
+			
+		end
+		
+	end
+
+end
+
 --hooks
 
 StaticPopup1:HookScript("OnShow", function(self)
@@ -850,6 +898,10 @@ StaticPopup1:HookScript("OnShow", function(self)
 	end
 
 end)
+
+hooksecurefunc("ContainerFrameItemButton_OnModifiedClick", bankfixInv)
+hooksecurefunc("BankFrameItemButtonGeneric_OnModifiedClick", bankfix)
+hooksecurefunc("BankFrameItemButtonGeneric_OnClick", bankfix)
 
 StaticPopup1:HookScript("OnHide", function(self)
 
@@ -1011,14 +1063,15 @@ _load:SetScript("OnEvent", function(self, event, ...)
 			
 			disable_useap = true
 			
-			-- ElvUI
+			-- ElvUI / Bagnon
 
 			if have_elv and not have_bagnon then
 				
 				C_Timer.After(0.1, function() _kuzumap.ElvUI_bank_buttons_create() end)
 			
 			elseif have_bagnon then
-			
+				
+				hooksecurefunc(_G.Bagnon.ItemSlot, "OnClick", Bagnonfix)
 				C_Timer.After(0.1, function() _kuzumap.Bagnon_bank_buttons_create() end)
 			
 			end
