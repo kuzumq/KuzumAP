@@ -3,6 +3,7 @@ local self
 local _setdb
 local _setdb_char
 local _kuzumap = {}
+local ADDON, Addon = ...
 local addonName = ...
 local _is_ap_item = IsArtifactPowerItem
 local UseContainerItem = UseContainerItem
@@ -15,6 +16,7 @@ local BankButtonIDToInvSlotID = BankButtonIDToInvSlotID
 local tipscan = CreateFrame("GameTooltip", "TooltipScanArt",nil,"GameTooltipTemplate")
 local b_c = false
 local b_c_2 = false
+local b_c_3 = false
 local elvui_changed = false
 local bagnon_changed = false
 local have_elv = IsAddOnLoaded('ElvUI')
@@ -656,6 +658,63 @@ function _kuzumap._useap_button_create()
 	
 end
 
+
+
+
+function _kuzumap._phasechange_button_create()
+	
+	local function FilterPhase(...) return true end
+	
+	local _phb = CreateFrame('Button', 'kuzumap_phasechange', UIParent, "ActionButtonTemplate, SecureActionButtonTemplate")
+	
+	_phb:SetSize(45,45)
+	_phb:SetPoint(_setdb.position_phase.point, UIParent, _setdb.position_phase.relativePoint, _setdb.position_phase.x, _setdb.position_phase.y)
+	_phb.NormalTexture:SetTexture(nil)
+	_phb:EnableMouse(true)
+	_phb:RegisterForDrag("LeftButton")
+	_phb:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	_phb:SetMovable(true)
+	_phb.icon:SetTexture(612099)
+	
+	_phb.text_center = _phb:CreateFontString()
+	_phb.text_center:SetPoint("CENTER",2,33)
+	_phb.text_center:SetTextColor(1, 1, 0.6)
+	_phb.text_center:SetFont("Fonts\\FRIZQT__.TTF", 13)
+	_phb.text_center:SetText('phase')
+	
+	_phb:SetScript("OnClick", function(self)
+	
+		if not UnitInParty('player') and not UnitInRaid('player') and not IsInInstance() then
+			
+			ChatFrame_AddMessageEventFilter('CHAT_MSG_SYSTEM', FilterPhase)
+			C_LFGList.CreateListing(469, '-', 0, 0, '', '', true, false)
+			LeaveParty()
+			
+			C_Timer.After(0.5, function() ChatFrame_RemoveMessageEventFilter('CHAT_MSG_SYSTEM', FilterPhase) end)
+			
+		else
+			
+			print('|cffF29B38  СА Инфо:|r |cff38F2ECОшибка! Вы находитесь не в открытом мире и/или уже в рейде/группе.|r')
+			
+		end
+		
+	end)
+	
+	_phb:SetScript("OnDragStart", function(self)
+		if self:IsMovable() then
+			self:StartMoving()
+		end
+	end)
+	_phb:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		_setdb.position_phase.point, _, _setdb.position_phase.relativePoint, _setdb.position_phase.x, _setdb.position_phase.y = self:GetPoint()
+	end)
+	
+	_phb:Show()
+	b_c_3 = true
+	
+end
+
 -- chat filter
 
 function _kuzumap._mythKeyChat_Info(link)
@@ -949,13 +1008,18 @@ function _kuzumap._load()
 
 	if KuzumAP_UserCharacterDB == nil then KuzumAP_UserCharacterDB = {} end
 	_setdb_char = KuzumAP_UserCharacterDB
-
+	
+	--UseAP
 	if _setdb.position == nil then _setdb.position = {} end
 	if _setdb.position.point == nil then _setdb.position.point = "CENTER" end
 	if _setdb.position.relativePoint == nil then _setdb.position.relativePoint = _setdb.position.point or "CENTER" end
-	if _setdb.position.x == nil then 
-		_setdb.position.x, _setdb.position.y = 0, -150 
-	end
+	if _setdb.position.x == nil then _setdb.position.x, _setdb.position.y = 0, -150 end
+	
+	--Phase
+	if _setdb.position_phase == nil then _setdb.position_phase = {} end
+	if _setdb.position_phase.point == nil then _setdb.position_phase.point = "CENTER" end
+	if _setdb.position_phase.relativePoint == nil then _setdb.position_phase.relativePoint = _setdb.position_phase.point or "CENTER" end
+	if _setdb.position_phase.x == nil then _setdb.position_phase.x, _setdb.position_phase.y = 0, -150 end
 	
 end
 
@@ -1030,9 +1094,10 @@ _load:SetScript("OnEvent", function(self, event, ...)
 		
 		_kuzumap._load()
 		
-	elseif event == "PLAYER_ENTERING_WORLD" and (not b_c_2) and (not b_c) then
+	elseif event == "PLAYER_ENTERING_WORLD" and (not b_c_2) and (not b_c) and (not b_c_3) then
 	
 		_kuzumap._bank_buttons_create()
+		_kuzumap._phasechange_button_create()
 		_kuzumap._useap_button_create()
 		_kuzumap._merchantmod_ed()
 		
