@@ -1,4 +1,5 @@
 -- start
+local version = '1.3'
 local self
 local _setdb
 local _setdb_char
@@ -17,6 +18,7 @@ local tipscan = CreateFrame("GameTooltip", "TooltipScanArt",nil,"GameTooltipTemp
 local b_c = false
 local b_c_2 = false
 local b_c_3 = false
+local a_sp = false
 local elvui_changed = false
 local bagnon_changed = false
 local have_elv = IsAddOnLoaded('ElvUI')
@@ -568,7 +570,7 @@ function _kuzumap.useap_button_upd()
 	
 	if not kuzumap_useAP then return false end
 	
-	if not disable_useap and _link then
+	if not disable_useap and _link and _setdb.settings.useap_button_check then
 	
 		kuzumap_useAP:Show()
 		kuzumap_useAP.text_center:SetText(_count)
@@ -654,12 +656,13 @@ function _kuzumap._useap_button_create()
 	
 	_kuzumap.useap_button_upd()
 	
+	if not _setdb.settings.useap_button_check then
+		_ub:Hide()
+	end
+	
 	b_c_2 = true 
 	
 end
-
-
-
 
 function _kuzumap._phasechange_button_create()
 	
@@ -684,7 +687,7 @@ function _kuzumap._phasechange_button_create()
 	
 	_phb:SetScript("OnClick", function(self)
 	
-		if not UnitInParty('player') and not UnitInRaid('player') and not IsInInstance() then
+		if not UnitInParty('player') and not UnitInRaid('player') and not IsInInstance() and not QueueStatusMinimapButton:IsVisible() then
 			
 			ChatFrame_AddMessageEventFilter('CHAT_MSG_SYSTEM', FilterPhase)
 			C_LFGList.CreateListing(469, '-', 0, 0, '', '', true, false)
@@ -694,7 +697,7 @@ function _kuzumap._phasechange_button_create()
 			
 		else
 			
-			print('|cffF29B38  СА Инфо:|r |cff38F2ECОшибка! Вы находитесь не в открытом мире и/или уже в рейде/группе.|r')
+			print('|cffF29B38  СА Инфо:|r |cff38F2ECОшибка! Вы находитесь не в открытом мире / в рейде или группе / в очереди в подземелье.|r')
 			
 		end
 		
@@ -710,7 +713,12 @@ function _kuzumap._phasechange_button_create()
 		_setdb.position_phase.point, _, _setdb.position_phase.relativePoint, _setdb.position_phase.x, _setdb.position_phase.y = self:GetPoint()
 	end)
 	
-	_phb:Show()
+	if _setdb.settings.phase_button_check then
+		_phb:Show()
+	else
+		_phb:Hide()
+	end
+	
 	b_c_3 = true
 	
 end
@@ -1003,11 +1011,19 @@ end)
 
 function _kuzumap._load()
 	
+	if KuzumAP_UserCharacterDB == nil then KuzumAP_UserCharacterDB = {} end
+	_setdb = KuzumAP_UserCharacterDB
+
+	if KuzumAP_UserDB == nil then KuzumAP_UserDB = {} end
+	_setdb_acc = KuzumAP_UserDB
+	
+	--[[
 	if KuzumAP_UserDB == nil then KuzumAP_UserDB = {} end
 	_setdb = KuzumAP_UserDB
 
 	if KuzumAP_UserCharacterDB == nil then KuzumAP_UserCharacterDB = {} end
 	_setdb_char = KuzumAP_UserCharacterDB
+	]]
 	
 	--UseAP
 	if _setdb.position == nil then _setdb.position = {} end
@@ -1020,6 +1036,16 @@ function _kuzumap._load()
 	if _setdb.position_phase.point == nil then _setdb.position_phase.point = "CENTER" end
 	if _setdb.position_phase.relativePoint == nil then _setdb.position_phase.relativePoint = _setdb.position_phase.point or "CENTER" end
 	if _setdb.position_phase.x == nil then _setdb.position_phase.x, _setdb.position_phase.y = 0, -150 end
+	
+	--Settings
+	if _setdb.settings == nil then _setdb.settings = {} end
+	
+	if _setdb.settings.phase_button_check == nil then _setdb.settings.phase_button_check = true end
+	if _setdb.settings.useap_button_check == nil then _setdb.settings.useap_button_check = true end
+	if _setdb.settings.autoloot_check == nil then _setdb.settings.autoloot_check = true end
+	
+	if _setdb.autoloottable == nil then _setdb.autoloottable = {} end
+	if _setdb.autoloottable == nil then _setdb.autoloottable = {} end
 	
 end
 
@@ -1057,45 +1083,212 @@ local function HookSetText4Art()
 
 end
 
--- load
-local _load = CreateFrame("Frame")
-_load:Hide()
-_load:RegisterEvent("ADDON_LOADED")
-_load:RegisterEvent("PLAYER_ENTERING_WORLD")
-_load:RegisterEvent("BAG_UPDATE_DELAYED")
-_load:RegisterEvent("PLAYER_REGEN_DISABLED")
-_load:RegisterEvent("PLAYER_REGEN_ENABLED")
-_load:RegisterEvent("PET_BATTLE_OPENING_START")
-_load:RegisterEvent("PET_BATTLE_CLOSE")
-_load:RegisterEvent("UNIT_ENTERED_VEHICLE")
-_load:RegisterEvent("UNIT_EXITED_VEHICLE")
-_load:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-_load:RegisterEvent("BANKFRAME_OPENED")
-_load:RegisterEvent("BANKFRAME_CLOSED")
-_load:RegisterEvent("ARTIFACT_XP_UPDATE")
-_load:SetScript("OnEvent", function(self, event, ...)
+--loot
 
-	if event == "ADDON_LOADED" and (...) == "Blizzard_ArtifactUI" then
+local lootTable = {
+
+['Осколок Пустоты'] = true,
+['Частица Пустоты'] = true,
+['Сгусток Пустоты'] = true,
+['Кровь Саргераса'] = true,
+['146919'] = true,
+
+}
+
+function _kuzumap.AutoLoot()
+
+	local function _fastloot_GetItemID(link)
+		local _, _, _, _, id, _, _, _, _, _, _, _, _, _ = string.find(link, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+		return id or 0
+	end
+
+	local function _fastloot_BOP(sid)
+
+		local lootIcon, lootName, lootQuantity, rarity, locked = GetLootSlotInfo(sid)
+		ConfirmLootSlot(sid)
+	
+	end
+
+	local function _fastloot_autoloot()
+
+		local itemsCount = GetNumLootItems()
+	
+		for i=1, itemsCount do
+	
+			local lootIcon, lootName, lootQuantity, rarity, locked = GetLootSlotInfo(i)
+			local itemLink = GetLootSlotLink(i)
+			local itemID = tostring(_fastloot_GetItemID(itemLink))
+			local itemLooted = false
+		
+			if _is_ap_item(itemID) then
+		
+				LootSlot(i)
+				itemLooted = true
+		
+			end
+		
+			for v,k in pairs(lootTable) do
+			
+				if lootName == v or itemID == v then
+			
+					if (not locked) then
+
+						LootSlot(i)
+						itemLooted = true
+
+					end
+				
+				end
+			
+			end
+		
+		end
+	
+	end
+
+	local _fastloot = CreateFrame('Frame', '_kuzumap_autoloot')
+	_fastloot:Hide()
+	if _setdb.settings.autoloot_check then
+		_fastloot:RegisterEvent('LOOT_READY')
+		_fastloot:RegisterEvent('LOOT_BIND_CONFIRM')
+	end
+	local function _loot_eventHandler(self, event, ...)
+
+		if(event == 'LOOT_READY') then
+		
+			_fastloot_autoloot()
+		
+		elseif (event=='LOOT_BIND_CONFIRM') then
+		
+			local sid = ...
+			_fastloot_BOP(sid)
+
+		end
+	
+	end
+	_fastloot:SetScript('OnEvent', _loot_eventHandler)
+
+end
+
+function _kuzumap.ConfigPanel()
+	
+	if a_sp then return end
+	
+	local configPanel = CreateFrame('Frame', '_kuzumap_mainaddonpanel', UIParent)
+	configPanel.name = 'Kuzum AP'
+	InterfaceOptions_AddCategory(configPanel)
+	local title = configPanel:CreateFontString(nil, 'ARTWORK', 'GameFontNormalLarge')
+	title:SetPoint('TOPLEFT', 16, -16)
+	title:SetText('Kuzum AP')
+	local title_version = configPanel:CreateFontString(nil, 'ARTWORK', 'GameFontNormalSmall')
+	title_version:SetPoint('TOPLEFT', 16, -31)
+	title_version:SetText('v.'..version)
+
+	--Check buttons
+		--phase
+	local phaseButton_settings = CreateFrame('CheckButton', 'phaseButton_settings_GlobalName', configPanel, 'ChatConfigCheckButtonTemplate')
+	phaseButton_settings:SetPoint('TOPLEFT', 14, -70)
+	getglobal(phaseButton_settings:GetName() .. 'Text'):SetText('Кнопка смены фаз')
+	if _setdb.settings.phase_button_check == true then
+		phaseButton_settings:SetChecked(true)
+	else
+		phaseButton_settings:SetChecked(false)
+	end
+	phaseButton_settings:SetScript('OnClick', function()
+		local checked = phaseButton_settings:GetChecked()
+		_setdb.settings.phase_button_check = checked
+		if _setdb.settings.phase_button_check then
+			kuzumap_phasechange:Show()
+		else
+			kuzumap_phasechange:Hide()
+		end
+	end)
+	
+		--use ap
+	local UseApButton_settings = CreateFrame('CheckButton', 'UseApButton_settings_GlobalName', configPanel, 'ChatConfigCheckButtonTemplate')
+	UseApButton_settings:SetPoint('TOPLEFT', 14, -92)
+	getglobal(UseApButton_settings:GetName() .. 'Text'):SetText('Кнопка АП')
+	if _setdb.settings.useap_button_check == true then
+		UseApButton_settings:SetChecked(true)
+	else
+		UseApButton_settings:SetChecked(false)
+	end
+	UseApButton_settings:SetScript('OnClick', function()
+		local checked = UseApButton_settings:GetChecked()
+		_setdb.settings.useap_button_check = checked
+		if _setdb.settings.useap_button_check then
+			_kuzumap.useap_button_upd()
+		else
+			_kuzumap.useap_button_upd()
+		end
+	end)
+	
+	-- autoloot
+	local AutoLoot_settings = CreateFrame('CheckButton', 'AutoLoot_settings_GlobalName', configPanel, 'ChatConfigCheckButtonTemplate')
+	AutoLoot_settings:SetPoint('TOPLEFT', 14, -114)
+	getglobal(AutoLoot_settings:GetName() .. 'Text'):SetText('Автолут тест')
+	AutoLoot_settings.tooltip = 'Автолут ОП/СА(любых)/Камней Антина/Кровь Саргераса'
+	if _setdb.settings.autoloot_check == true then
+		AutoLoot_settings:SetChecked(true)
+	else
+		AutoLoot_settings:SetChecked(false)
+	end
+	AutoLoot_settings:SetScript('OnClick', function()
+		local checked = AutoLoot_settings:GetChecked()
+		_setdb.settings.autoloot_check = checked
+		if _setdb.settings.autoloot_check then
+			_kuzumap_autoloot:RegisterEvent('LOOT_READY')
+			_kuzumap_autoloot:RegisterEvent('LOOT_BIND_CONFIRM')
+		else
+			_kuzumap_autoloot:UnregisterEvent('LOOT_READY')
+			_kuzumap_autoloot:UnregisterEvent('LOOT_BIND_CONFIRM')
+		end
+	end)
+	
+	a_sp = true
+end
+
+-- load
+local _load = CreateFrame('Frame')
+_load:Hide()
+_load:RegisterEvent('ADDON_LOADED')
+_load:RegisterEvent('PLAYER_ENTERING_WORLD')
+_load:RegisterEvent('BAG_UPDATE_DELAYED')
+_load:RegisterEvent('PLAYER_REGEN_DISABLED')
+_load:RegisterEvent('PLAYER_REGEN_ENABLED')
+_load:RegisterEvent('PET_BATTLE_OPENING_START')
+_load:RegisterEvent('PET_BATTLE_CLOSE')
+_load:RegisterEvent('UNIT_ENTERED_VEHICLE')
+_load:RegisterEvent('UNIT_EXITED_VEHICLE')
+_load:RegisterEvent('PLAYER_SPECIALIZATION_CHANGED')
+_load:RegisterEvent('BANKFRAME_OPENED')
+_load:RegisterEvent('BANKFRAME_CLOSED')
+_load:RegisterEvent('ARTIFACT_XP_UPDATE')
+_load:SetScript('OnEvent', function(self, event, ...)
+
+	if event == 'ADDON_LOADED' and (...) == 'Blizzard_ArtifactUI' then
 	
 		SetText = ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel.SetText
-		ArtifactFrame.PerksTab.TitleContainer:SetScript("OnUpdate", nil)
+		ArtifactFrame.PerksTab.TitleContainer:SetScript('OnUpdate', nil)
 		HookSetText4Art()
-		hooksecurefunc(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel,"SetText", HookSetText4Art)
+		hooksecurefunc(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel,'SetText', HookSetText4Art)
 		
 	end
 	
-	if event == "ARTIFACT_XP_UPDATE" and ArtifactFrame and ArtifactFrame:IsShown() then
+	if event == 'ARTIFACT_XP_UPDATE' and ArtifactFrame and ArtifactFrame:IsShown() then
 	
 		HookSetText4Art()
 	
 	end
 	
-	if event == "ADDON_LOADED" and (...) == addonName then
+	if event == 'ADDON_LOADED' and (...) == addonName then
 		
 		_kuzumap._load()
 		
-	elseif event == "PLAYER_ENTERING_WORLD" and (not b_c_2) and (not b_c) and (not b_c_3) then
+	elseif event == 'PLAYER_ENTERING_WORLD' and (not b_c_2) and (not b_c) and (not b_c_3) then
 	
+		_kuzumap.ConfigPanel()
+		_kuzumap.AutoLoot()
 		_kuzumap._bank_buttons_create()
 		_kuzumap._phasechange_button_create()
 		_kuzumap._useap_button_create()
@@ -1104,27 +1297,27 @@ _load:SetScript("OnEvent", function(self, event, ...)
 	end
 	
 	-- recount mod
-	if event == "ADDON_LOADED" and (...) == 'Recount' then
+	if event == 'ADDON_LOADED' and (...) == 'Recount' then
 		
 		_G.Recount.ResetData = _G.Recount.ResetDataUnsafe
 		
 	end
 	
-	if event == "BAG_UPDATE_DELAYED" or event == "PLAYER_SPECIALIZATION_CHANGED" then
+	if event == 'BAG_UPDATE_DELAYED' or event == 'PLAYER_SPECIALIZATION_CHANGED' then
 	
 			_kuzumap.useap_button_upd()
 			
-		elseif event == "PLAYER_REGEN_DISABLED" or event == "PET_BATTLE_OPENING_START" or (event == "UNIT_ENTERED_VEHICLE" and ... == "player" and not InCombatLockdown()) then
+		elseif event == 'PLAYER_REGEN_DISABLED' or event == 'PET_BATTLE_OPENING_START' or (event == 'UNIT_ENTERED_VEHICLE' and ... == 'player' and not InCombatLockdown()) then
 		
 			_kuzumap.useap_button_upd()
-			_load:UnregisterEvent("BAG_UPDATE_DELAYED")
+			_load:UnregisterEvent('BAG_UPDATE_DELAYED')
 			
-		elseif event == "PLAYER_REGEN_ENABLED" or event == "PET_BATTLE_CLOSE" or (event == "UNIT_EXITED_VEHICLE" and ... == "player") then
+		elseif event == 'PLAYER_REGEN_ENABLED' or event == 'PET_BATTLE_CLOSE' or (event == 'UNIT_EXITED_VEHICLE' and ... == 'player') then
 		
 			_kuzumap.useap_button_upd()
-			_load:RegisterEvent("BAG_UPDATE_DELAYED")
+			_load:RegisterEvent('BAG_UPDATE_DELAYED')
 			
-		elseif event == "BANKFRAME_OPENED" then
+		elseif event == 'BANKFRAME_OPENED' then
 			
 			disable_useap = true
 			
@@ -1136,14 +1329,14 @@ _load:SetScript("OnEvent", function(self, event, ...)
 			
 			elseif have_bagnon then
 				
-				hooksecurefunc(_G.Bagnon.ItemSlot, "OnClick", Bagnonfix)
+				hooksecurefunc(_G.Bagnon.ItemSlot, 'OnClick', Bagnonfix)
 				C_Timer.After(0.1, function() _kuzumap.Bagnon_bank_buttons_create() end)
 			
 			end
 			
 			_kuzumap.useap_button_upd()
 			
-		elseif event == "BANKFRAME_CLOSED" then
+		elseif event == 'BANKFRAME_CLOSED' then
 			
 			disable_useap = false
 			_kuzumap.useap_button_upd()
