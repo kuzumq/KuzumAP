@@ -693,6 +693,7 @@ function _kuzumap._phasechange_button_create()
 			C_LFGList.CreateListing(469, '-', 0, 0, '', '', true, false)
 			LeaveParty()
 			
+			C_Timer.After(0.01, function() LeaveParty() end)
 			C_Timer.After(0.5, function() ChatFrame_RemoveMessageEventFilter('CHAT_MSG_SYSTEM', FilterPhase) end)
 			
 		else
