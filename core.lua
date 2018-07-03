@@ -25,6 +25,31 @@ local have_elv = IsAddOnLoaded('ElvUI')
 local have_bagnon = IsAddOnLoaded('Bagnon')
 local disable_useap = false
 
+local function cutoffnums(num)
+	
+	if not num then return 0 end
+	
+    local leng = string.len(num)
+	local str = tostring(num)
+
+	local stm = ("%%.2f"):format()
+	
+	if leng >= 7 then
+	
+		str = stm:format(num/1000000)..'M'
+
+	end
+
+	if leng >= 10 then
+	
+		str = stm:format(num/1000000000)..'Б'
+
+	end
+	
+	return str
+	
+end
+
 function _kuzumap._ap_to_nlvl()
 
 	local _, _, _, _, totalPower, traitsLearned, _, _, _, _, _, _, tier = C_ArtifactUI.GetEquippedArtifactInfo()
@@ -267,6 +292,31 @@ function _kuzumap._deposite_sa()
 		print('|cffF29B38  СА Инфо:|r |cff38F2EC <-- '..num..' СА перемещены в банк.|r')
 		
 	end
+	
+end
+
+function _kuzumap._total_ap_onChar()
+
+	local have = 0
+
+	for i=0, 4 do 
+	
+		for j=1,GetContainerNumSlots(i) do 
+			
+			local iId = GetContainerItemID(i,j)
+			
+			if _is_ap_item(iId) then
+			
+				local count = _kuzumap._getap_f_i(i,j)
+				have = have + count
+				
+			end
+			
+		end
+		
+	end
+
+	return have
 	
 end
 
@@ -571,9 +621,12 @@ function _kuzumap.useap_button_upd()
 	if not kuzumap_useAP then return false end
 	
 	if not disable_useap and _link and _setdb.settings.useap_button_check and not UnitAffectingCombat("player") then
-	
+		
+		local totalOnChar = _kuzumap._total_ap_onChar()
+		
 		kuzumap_useAP:Show()
 		kuzumap_useAP.text_center:SetText(_count)
+		kuzumap_useAP.text_top:SetText(cutoffnums(totalOnChar))
 		kuzumap_useAP.icon:SetTexture(_itemicon)
 		kuzumap_useAP:SetAttribute("type", "item")
 		kuzumap_useAP:SetAttribute("item", _bag.." ".._slot)
@@ -612,15 +665,15 @@ function _kuzumap._useap_button_create()
 	_ub:RegisterEvent("BANKFRAME_CLOSED")
 	
 	_ub.text_top = _ub:CreateFontString()
-	_ub.text_top:SetPoint("CENTER",0,27)
+	_ub.text_top:SetPoint("CENTER",0,30)
 	_ub.text_top:SetSize(200, 50)
-	_ub.text_top:SetFont("Fonts\\MORPHEUS.ttf", 13, "OUTLINE")
+	_ub.text_top:SetFont("Fonts\\FRIZQT__.TTF", 13)
 	
 	_ub.text_center = _ub:CreateFontString()
 	_ub.text_center:SetPoint("CENTER",0,-1)
 	_ub.text_center:SetSize(200, 50)
 	_ub.text_center:SetTextColor(0.1, 1, 0.1)
-	_ub.text_center:SetFont("Fonts\\MORPHEUS.ttf", 26, "OUTLINE")
+	_ub.text_center:SetFont("Fonts\\FRIZQT__.TTF", 26, "OUTLINE")
 	
 	_ub.NormalTexture:SetTexture(nil)
 	_ub:EnableMouse(true)
@@ -1017,15 +1070,7 @@ function _kuzumap._load()
 
 	if KuzumAP_UserDB == nil then KuzumAP_UserDB = {} end
 	_setdb_acc = KuzumAP_UserDB
-	
-	--[[
-	if KuzumAP_UserDB == nil then KuzumAP_UserDB = {} end
-	_setdb = KuzumAP_UserDB
 
-	if KuzumAP_UserCharacterDB == nil then KuzumAP_UserCharacterDB = {} end
-	_setdb_char = KuzumAP_UserCharacterDB
-	]]
-	
 	--UseAP
 	if _setdb.position == nil then _setdb.position = {} end
 	if _setdb.position.point == nil then _setdb.position.point = "CENTER" end
@@ -1050,34 +1095,10 @@ function _kuzumap._load()
 	
 end
 
-local function cutoffnums(num)
-	
-	if not num then return 0 end
-	
-    local leng = string.len(num)
-	local str = tostring(num)
-
-	local stm = ("%%.2f"):format()
-	
-	if leng >= 8 then
-	
-		str = stm:format(num/1000000)..'M'
-
-	end
-
-	if leng >= 10 then
-	
-		str = stm:format(num/1000000000)..'Б'
-
-	end
-	
-	return str
-	
-end
-
 local function HookSetText4Art()
-
-	local _, _, _, _, totalPower, traitsLearned, _, _, _, _, _, _, tier = C_ArtifactUI.GetEquippedArtifactInfo()
+	
+	local tier = C_ArtifactUI.GetArtifactTier()
+	local _, _, _, _, totalPower, traitsLearned = C_ArtifactUI.GetArtifactInfo()
 	local _, power, powerForNextTrait = MainMenuBar_GetNumArtifactTraitsPurchasableFromXP(traitsLearned, totalPower, tier)
 
 	SetText(ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel, cutoffnums(power) .. " \124c11FF8888 / " .. cutoffnums(powerForNextTrait-power) .."\124r")
@@ -1268,7 +1289,7 @@ _load:RegisterEvent('ARTIFACT_XP_UPDATE')
 _load:SetScript('OnEvent', function(self, event, ...)
 
 	if event == 'ADDON_LOADED' and (...) == 'Blizzard_ArtifactUI' then
-	
+		
 		SetText = ArtifactFrame.PerksTab.TitleContainer.PointsRemainingLabel.SetText
 		ArtifactFrame.PerksTab.TitleContainer:SetScript('OnUpdate', nil)
 		HookSetText4Art()
