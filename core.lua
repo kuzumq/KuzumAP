@@ -25,8 +25,10 @@ local have_elv = IsAddOnLoaded('ElvUI')
 local have_bagnon = IsAddOnLoaded('Bagnon')
 local disable_useap = false
 
-local function cutoffnums(num)
+local function cutoffnums(num, mn)
 	
+	if not mn then mn = 1 end
+	num = num * mn
 	if not num then return 0 end
 	
     local leng = string.len(num)
@@ -610,40 +612,55 @@ end
 
 function _kuzumap.useap_button_upd()
 	
-	_link, _itemicon, _bag, _slot, _count = _kuzumap._ap_item_player_bag()
-	
-	if InCombatLockdown() or UnitHasVehicleUI("player") then
-	
-		return
-		
-	end
-	
 	if not kuzumap_useAP then return false end
 	
-	if not disable_useap and _link and _setdb.settings.useap_button_check and not UnitAffectingCombat("player") then
-		
-		local totalOnChar = _kuzumap._total_ap_onChar()
-		
+	_link, _itemicon, _bag, _slot, _count = _kuzumap._ap_item_player_bag()
+	
+	local totalOnChar = _kuzumap._total_ap_onChar()
+	
+	kuzumap_useAP.text_top:SetText(cutoffnums(totalOnChar))
+	kuzumap_useAP.text_center:SetText(_count)
+	kuzumap_useAP.icon:SetTexture(_itemicon)
+	
+	if _count > 0 and _setdb.settings.useap_button_check then
+	
 		kuzumap_useAP:Show()
-		kuzumap_useAP.text_center:SetText(_count)
-		kuzumap_useAP.text_top:SetText(cutoffnums(totalOnChar))
-		kuzumap_useAP.icon:SetTexture(_itemicon)
-		kuzumap_useAP:SetAttribute("type", "item")
-		kuzumap_useAP:SetAttribute("item", _bag.." ".._slot)
 	
-		if kuzumap_useAP:IsMouseOver() then
-			GameTooltip:SetHyperlink(_link)
-		end
-	
-		local start, duration, enable = GetContainerItemCooldown(_bag, _slot)
-		if duration > 0 then
-			kuzumap_useAP.cooldown:SetCooldown(start, duration)
-		end
 	else
 
-		kuzumap_useAP:Hide()	
-			
+		kuzumap_useAP:Hide()
+		
 	end
+	
+	if InCombatLockdown() or UnitHasVehicleUI("player") or UnitAffectingCombat("player") then
+		
+		kuzumap_useAP:Disable()
+	
+	else
+		
+		kuzumap_useAP:Enable()
+		
+		if not disable_useap then
+			
+			local start, duration, enable = GetContainerItemCooldown(_bag, _slot)
+			
+			kuzumap_useAP.icon:SetTexture(_itemicon)
+			kuzumap_useAP:SetAttribute("type", "item")
+			kuzumap_useAP:SetAttribute("item", _bag.." ".._slot)
+			
+			if kuzumap_useAP:IsMouseOver() then
+				GameTooltip:SetHyperlink(_link)
+			end
+			
+			if duration > 0 then
+				kuzumap_useAP.cooldown:SetCooldown(start, duration)
+			end
+			
+		end
+		
+	end
+	
+	
 	
 end
 
@@ -1332,7 +1349,7 @@ _load:SetScript('OnEvent', function(self, event, ...)
 		elseif event == 'PLAYER_REGEN_DISABLED' or event == 'PET_BATTLE_OPENING_START' or (event == 'UNIT_ENTERED_VEHICLE' and ... == 'player' and not InCombatLockdown()) then
 		
 			_kuzumap.useap_button_upd()
-			_load:UnregisterEvent('BAG_UPDATE_DELAYED')
+			--_load:UnregisterEvent('BAG_UPDATE_DELAYED')
 			
 		elseif event == 'PLAYER_REGEN_ENABLED' or event == 'PET_BATTLE_CLOSE' or (event == 'UNIT_EXITED_VEHICLE' and ... == 'player') then
 		
