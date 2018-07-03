@@ -1117,15 +1117,15 @@ function _kuzumap.AutoLoot()
 		for i=1, itemsCount do
 	
 			local lootIcon, lootName, lootQuantity, rarity, locked = GetLootSlotInfo(i)
-			local itemLink = GetLootSlotLink(i)
-			local itemID = tostring(_fastloot_GetItemID(itemLink))
 			local itemLooted = false
+			local itemLink = (lootQuantity ~= 0 and GetLootSlotLink(i)) or (lootQuantity == 0 and '')
+			local itemID = tostring(_fastloot_GetItemID(itemLink))
 		
-			if _is_ap_item(itemID) then
+			if _is_ap_item(itemID) or lootQuantity == 0 then
 		
 				LootSlot(i)
 				itemLooted = true
-		
+				
 			end
 		
 			for v,k in pairs(lootTable) do
@@ -1228,7 +1228,7 @@ function _kuzumap.ConfigPanel()
 	local AutoLoot_settings = CreateFrame('CheckButton', 'AutoLoot_settings_GlobalName', configPanel, 'ChatConfigCheckButtonTemplate')
 	AutoLoot_settings:SetPoint('TOPLEFT', 14, -114)
 	getglobal(AutoLoot_settings:GetName() .. 'Text'):SetText('Автолут тест')
-	AutoLoot_settings.tooltip = 'Автолут ОП/СА(любых)/Камней Антина/Кровь Саргераса'
+	AutoLoot_settings.tooltip = 'Автолут ОП/СА(любых)/Камней Антина/Кровь Саргераса/Золото'
 	if _setdb.settings.autoloot_check == true then
 		AutoLoot_settings:SetChecked(true)
 	else
