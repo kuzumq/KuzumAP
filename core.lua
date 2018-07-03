@@ -570,7 +570,7 @@ function _kuzumap.useap_button_upd()
 	
 	if not kuzumap_useAP then return false end
 	
-	if not disable_useap and _link and _setdb.settings.useap_button_check then
+	if not disable_useap and _link and _setdb.settings.useap_button_check and not UnitAffectingCombat("player") then
 	
 		kuzumap_useAP:Show()
 		kuzumap_useAP.text_center:SetText(_count)
