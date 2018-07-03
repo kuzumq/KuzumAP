@@ -622,7 +622,7 @@ function _kuzumap.useap_button_upd()
 	kuzumap_useAP.text_center:SetText(_count)
 	kuzumap_useAP.icon:SetTexture(_itemicon)
 	
-	if _count > 0 and _setdb.settings.useap_button_check then
+	if _link and _setdb.settings.useap_button_check then
 	
 		kuzumap_useAP:Show()
 	
@@ -640,7 +640,7 @@ function _kuzumap.useap_button_upd()
 		
 		kuzumap_useAP:Enable()
 		
-		if not disable_useap then
+		if not disable_useap and _link then
 			
 			local start, duration, enable = GetContainerItemCooldown(_bag, _slot)
 			
