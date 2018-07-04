@@ -1,5 +1,5 @@
 -- start
-local version = '1.3'
+local version = '1.4'
 local self
 local _setdb
 local _setdb_char
@@ -222,7 +222,7 @@ function _kuzumap._getap_f_i(bag, slot)
 	
     tipscan:Show()
 	
-	local txt = _G['TooltipScanArtTextLeft4']:GetText()
+	local txt = _G['TooltipScanArtTextLeft4']:GetText() or ''
 	txt = txt:gsub("%s+", "")
 	
 	local x = tonumber(string.match(txt, '%d+'))
