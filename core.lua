@@ -15,6 +15,7 @@ local PickupContainerItem = PickupContainerItem
 local GetContainerNumSlots = GetContainerNumSlots
 local BankButtonIDToInvSlotID = BankButtonIDToInvSlotID
 local tipscan = CreateFrame("GameTooltip", "TooltipScanArt",nil,"GameTooltipTemplate")
+tipscan:Hide()
 local b_c = false
 local b_c_2 = false
 local b_c_3 = false
@@ -208,6 +209,9 @@ end
 
 function _kuzumap._getap_f_i(bag, slot)
 
+	local txt
+	local ap
+
 	tipscan:SetOwner(UIParent, "ANCHOR_NONE")
 	
 	if bag == -1 then
@@ -222,14 +226,21 @@ function _kuzumap._getap_f_i(bag, slot)
 	
     tipscan:Show()
 	
-	local txt = _G['TooltipScanArtTextLeft4']:GetText() or ''
+	txt = _G['TooltipScanArtTextLeft4']:GetText() or ''
 	txt = txt:gsub("%s+", "")
+	txt = txt:gsub(",", "")
 	
-	local x = tonumber(string.match(txt, '%d+'))
+	if txt:find("млн") then
 	
-	tipscan:Hide()
+		ap = tonumber(string.match(txt, '%d+')) * 100000
+		
+	else
 	
-	return x
+		ap = tonumber(string.match(txt, '%d+'))
+	
+	end
+	
+	return ap
 	
 end
 
@@ -310,6 +321,7 @@ function _kuzumap._total_ap_onChar()
 			if _is_ap_item(iId) then
 			
 				local count = _kuzumap._getap_f_i(i,j)
+				
 				have = have + count
 				
 			end
