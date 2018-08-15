@@ -232,7 +232,7 @@ function _kuzumap._getap_f_i(bag, slot)
 	
 	if txt:find("млн") then
 	
-		ap = tonumber(string.match(txt, '%d+')) * 100000
+		ap = tonumber(string.match(txt, '%d+')) * 1000000
 		
 	else
 	
