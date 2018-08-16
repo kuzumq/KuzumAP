@@ -227,12 +227,13 @@ function _kuzumap._getap_f_i(bag, slot)
     tipscan:Show()
 	
 	txt = _G['TooltipScanArtTextLeft4']:GetText() or ''
-	txt = txt:gsub("%s+", "")
-	txt = txt:gsub(",", "")
+	--txt = txt:gsub("%s+", "")
+	txt = txt:gsub(",", ".")
 	
 	if txt:find("млн") then
 	
-		ap = tonumber(string.match(txt, '%d+')) * 1000000
+		ap = tonumber(string.match(txt, '%d+.%d+')) or tonumber(string.match(txt, '%d+'))
+		ap = ap * 1000000
 		
 	else
 	
